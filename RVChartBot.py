@@ -122,8 +122,8 @@ options.add_argument('--window-size=1300,800')
 driver = webdriver.Chrome('chromedriver_win32/chromedriver.exe', options=options)
 driver.implicitly_wait(1)
 driver.get('https://www.dcinside.com/') # 디시인사이드 로그인 페이지 로드
-driver.find_element_by_name('user_id').send_keys('rvchartbot') # 아이디
-driver.find_element_by_name('pw').send_keys('dkfmaekdnsrkdtks123') # 패스워드
+driver.find_element_by_name('user_id').send_keys('*****') # 아이디
+driver.find_element_by_name('pw').send_keys('*****') # 패스워드
 driver.find_element_by_id('login_ok').click() # 로그인
 driver.get(gallpath) # 글을 쓰고자 하는 갤러리로 이동
 
