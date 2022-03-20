@@ -18,8 +18,8 @@ plt.rcParams.update({'figure.max_open_warning': 0})
 
 header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko'}
 
-fivepath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\five.png'
-dailypath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\daily.png'
+fivepath = r'C:\Users\***\PycharmProjects\RVChartBot\five.png'
+dailypath = r'C:\Users\***\PycharmProjects\RVChartBot\daily.png'
 gallpath = 'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_vlive'
 
 #멜론에 관한 데이터를 얻는 클래스
