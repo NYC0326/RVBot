@@ -5,11 +5,11 @@ from selenium import webdriver
 
 def connect_api():
     # 트위터 Application에서 발급 받은 key 정보들 문자열로 입력
-    bearer_token = "**"
-    consumer_key = "**"
-    consumer_secret = "**"
-    access_token = "**-**"
-    access_token_secret = "**"
+    bearer_token = r"AAAAAAAAAAAAAAAAAAAAAIMjSQEAAAAA6gT%2B0g0rQaFyyvq8d9AxGWDUOJA%3Dc4oVoZQVto44d3keuDNayrYFvoQfFPBjM0wiEMDPuTdRW5o6wB"
+    consumer_key = r"J5B04Nh8JpE8FrdJntuuiCQGI"
+    consumer_secret = r"cxQg0D4RvCRLfrpu5DEDuEKxUzfBKKGX3B5T71OLs6t3Ri1jRU"
+    access_token = r"806164211986415617-NDuMDJjcTeTzva4dxaAq2tj056czdmL"
+    access_token_secret = r"lWgRvZ6VxVyNr4pSi0AE9WC7mEIZpTdsmUI12i0e4sZll"
 
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)

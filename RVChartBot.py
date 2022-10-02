@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from matplotlib import pyplot as plt
 from matplotlib import rc
 from matplotlib.pyplot import figure
@@ -11,30 +12,38 @@ import matplotlib as mpl
 # 그래프 띄울 필요가 없고 그냥 저장만 하면 되서 사용
 mpl.use('Agg')
 
-# plt.rcParams.update({'figure.max_open_warning': 0}) 
-# max open warning 경고 안뜨게 할려고 적어둔 거였는데
+# plt.rcParams.update({'figure.max_open_warning': 0})
+# max_open_warning 경고 안뜨게 할려고 적어둔 거였는데
 # 그냥 plt.close() 하면 안뜬다는 말이 있어서 테스트 해보게 주석처리함
 
 header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko'}
 
-<<<<<<< HEAD
 fivepath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\five.png'
 dailypath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\daily.png'
 # gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvetreveluv'
-gallpath = r'https://gall.dcinside.com/mgallery/board/lists/?id=redvelvet_reality'
+gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_reality'
 transparency = False
-=======
-fivepath = r'C:\Users\***\PycharmProjects\RVChartBot\five.png'
-dailypath = r'C:\Users\***\PycharmProjects\RVChartBot\daily.png'
-gallpath = 'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_vlive'
->>>>>>> 1736e2fd3d7b2b982d2c3347aff4df95a9435670
 
 #멜론에 관한 데이터를 얻는 클래스
 class MelonData:
     def __init__(self):
+        self.year = None
+        self.month = None
+        self.date = None
         self.timenow = None
         self.data = None
         self.datalen = None
+
+    # 오늘 날짜 크롤링 (datetime 쓰기 귀찮아서)
+    def getDate(self):
+        req = requests.get('https://www.melon.com/chart/index.htm', headers=header)
+        html = req.text
+        soup = BeautifulSoup(html, 'html.parser')
+        today = soup.find("span", {"class": "year"}).text
+        self.year = today[:4]
+        self.month = today[5:7]
+        self.date = today[8:10]
+        return self.year, self.month, self.date
 
     # 현재 멜론 XX시 차트 크롤링
     def time(self):
@@ -57,13 +66,14 @@ class MelonData:
             for j in range(len(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'])):
                 fiveS.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'][j]['VAL'])
             del fiveS[0]
-            for i in range(len(fiveS)):
-                fiveS[i] = float(fiveS[i])
+            for j in range(len(fiveS)):
+                fiveS[j] = float(fiveS[j])
             self.data.append(fiveS)
-        self.datalen = len(self.data[0])
         if param == 0:
-            return self.data
+            return len(self.data[0])
         if param == 1:
+            return self.data
+        if param == 2:
             return self.data, self.name
 
     def getDailyData(self, param):
@@ -91,6 +101,7 @@ class MelonData:
             soup = BeautifulSoup(html, "html.parser")
             self.name.append(soup.find("div", {"class": "song_name"}).text.replace('곡명', '').strip())
         return self.data, self.SID, self.name
+
 #플로에 관한 데이터를 얻는 클래스
 class floData:
     def __init__(self):
@@ -99,8 +110,9 @@ class floData:
         flochartURL = "https://api.music-flo.com/display/v1/browser/chart/1"
         flochartPage = urllib.request.urlopen(flochartURL)
         flochartData = json.loads(flochartPage.read())
-        self.timenow = flochartData["data"]["chart"]["basedOnUpdate"][:5]
+        self.timenow = flochartData["data"]["chart"]["basedOnUpdate"][:2]+':00'
         return self.timenow
+
 #벅스에 대한 데이터를 얻는 클래스
 class bugsData:
     def __init__(self):
@@ -118,7 +130,7 @@ timeOrigMelon2 = MelonData().time()    #시간이 바뀌었는지 비교하기 �
 멜론에는 5분마다 그 곡의 점유율(전체 들은 곡중 그 곡을 들은 비율)을 업데이트 해주는데 만약 새로운 값이 나왔다면
 데이터의 길이가 달라졌을 것 이므로, 처음 길이를 저장해 놓은 전역 변수
 '''
-fiveOrigLength = len(MelonData().getFiveData(0)[0])
+fiveOrigLength = MelonData().getFiveData(0)
 floTimeOrig = floData().time()   # 플로차트의 시간 (ex) 18:00 차트)
 timeOrigBugs = bugsData().time() # 벅스차트의 시간 (ex) 18:00 차트)
 # 크롬 환경 변수
@@ -126,15 +138,15 @@ options = webdriver.ChromeOptions()
 # 크롬 투명하게 실행
 if transparency is True:
     options.add_argument('headless')
-# 크롬 창 1300*800으로 실행 (하는 이유는 화면 창 사이즈에 따라서 웹 구조가 조금 달라질 수도 있어서)
-options.add_argument('--window-size=1300,800')
+# 크롬 창 1920*1080으로 실행 (하는 이유는 화면 창 사이즈에 따라서 웹 구조가 조금 달라질 수도 있어서)
+options.add_argument('--window-size=1920,1080')
 # 크롬 드라이버 로드
 driver = webdriver.Chrome('chromedriver_win32/chromedriver.exe', options=options)
-driver.implicitly_wait(1)
+driver.implicitly_wait(5)
 driver.get('https://www.dcinside.com/') # 디시인사이드 로그인 페이지 로드
-driver.find_element_by_name('user_id').send_keys('*****') # 아이디
-driver.find_element_by_name('pw').send_keys('*****') # 패스워드
-driver.find_element_by_id('login_ok').click() # 로그인
+driver.find_element(By.NAME, 'user_id').send_keys('rvchartbot') # 아이디
+driver.find_element(By.NAME, 'pw').send_keys('dkfmaekdnsrkdtks123') # 패스워드
+driver.find_element(By.ID, 'login_ok').click() # 로그인
 driver.get(gallpath) # 글을 쓰고자 하는 갤러리로 이동
 
 # 10 미만의 시간단위에 앞에 0을 붙혀주는 함수 ex. 8시 1분 -> 08시 01분
@@ -159,13 +171,14 @@ def checkUpdate():
         flochartTime = floData().time()
     except:
         print('음원 차트 시간 불러오기 실패')
+
     # 멜론 5분 실수치 퍼오기
     try:
-        fiveSeries = MelonData().getFiveData(0)
+        fiveSeries = MelonData().getFiveData(1)
     except:
         print('멜론 5분 실수치 불러오기 실패')
+
     #실시간 차트 업데이트
-    xcate = MelonData().getDailyData('time')
     try:
         if timeOrigMelon != timeNowMelon:
             timeOrigMelon = timeNowMelon
@@ -173,10 +186,11 @@ def checkUpdate():
             #melon_daily()
     except:
         pass
+
     # 정각이 지난 한 10~30초 정도 아무 데이터가 없을 때가 있다. 그때를 위한 코드이다.
     if fiveOrigLength == 0:
         try:
-            fiveSeries = MelonData().getFiveData(0)
+            fiveSeries = MelonData().getFiveData(1)
         except:
             pass
 
@@ -191,7 +205,6 @@ def checkUpdate():
         pass
 
     # 만약 실시간 차트 (1시간 기준)가 업데이트 되었다면, 실시간 차트를 그려주는 함수를 실행한다.
-    '''
     try:
         if floTimeOrig != flochartTime and timeNowMelon != timeOrigMelon2 and timeBugs != timeOrigBugs:
             floTimeOrig = flochartTime
@@ -201,47 +214,47 @@ def checkUpdate():
             RV_rank()
     except:
         pass
-    '''
     threading.Timer(5, checkUpdate).start()
 
 # 팬들이 모여있는 디씨인사이드 사이트의 갤러리에 현재 음원 순위, 차트 그래프 사진을 업로드 하는 함수이다.
 def DCupload(content, title, address=None):
     # 제목 입력
-    driver.find_element_by_id('subject').send_keys(title)
+    driver.find_element(By.ID, 'subject').send_keys(title)
     # 말머리 선택 / 현재 선택된 갤러리는 말머리가 없음
-    driver.find_element_by_xpath("//li[@data-no='0']").click()
+    # driver.find_element_by_xpath("//li[@data-no='0']").click()
     # HTML으로 쓰기 방식 변경
-    driver.find_element_by_xpath('//*[@id="chk_html"]').click()
+    driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
     # time.sleep(1)
-    #driver.switch_to.frame(driver.find_element_by_xpath("//iframe[@name='tx_canvas_wysiwyg']"))
+    # HTML로 쓰기 방식 변경하면 알아서 글쓰는 공간으로 옮겨짐
+    # driver.switch_to.frame(driver.find_element_by_xpath("//iframe[@name='tx_canvas_wysiwyg']"))
     # 본문 입력
-    driver.find_element_by_tag_name("body").send_keys(content)
-    driver.find_element_by_xpath('//*[@id="chk_html"]').click()
+    driver.find_element(By.TAG_NAME, "body").send_keys(content)
+    driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
     # 이미지 업로드 창 선택
     if address != None:
-        driver.find_element_by_xpath('//*[@id="tx_image"]/a').click();
+        driver.find_element(By.XPATH, '//*[@id="tx_image"]/a').click();
         time.sleep(1)
         # 이미지 업로드 창으로 변경
         driver.switch_to.window(driver.window_handles[-1])
-        driver.find_element_by_css_selector("input[type='file']").send_keys(address)
+        driver.find_element(By.CSS_SELECTOR, "input[type='file']").send_keys(address)
         time.sleep(5)
-        driver.find_element_by_xpath("//button[@class='btn_apply']").click()
+        driver.find_element(By.XPATH, "//button[@class='btn_apply']").click()
         time.sleep(1.5)
         # 글쓰기 폼으로 진입
         driver.switch_to.window(driver.window_handles[0])
     # 글쓰기 저장
     driver.switch_to.default_content()
-    driver.find_element_by_xpath('//*[@id="chk_html"]').click()
-    driver.find_element_by_xpath("//button[@class='btn_blue btn_svc write']").click()
+    driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
+    driver.find_element(By.XPATH, "//button[@class='btn_blue btn_svc write']").click()
     # 저장 딜레이
-    time.sleep(1)
+    driver.implicitly_wait(1)
     # 다시 갤사이트로 가기
     driver.get(gallpath)
-    time.sleep(1)
+    driver.implicitly_wait(1)
 
 # 멜론 5분 실수치를 이용하여 그래프를 만들어 주는 함수이다.
 def melon_five():
-    fiveSeries, fiveName = MelonData().getFiveData(1) # 5분 실수치와 5분 차트 노래 제목들을 퍼온다.
+    fiveSeries, fiveName = MelonData().getFiveData(2) # 5분 실수치와 5분 차트 노래 제목들을 퍼온다.
     fiveSeriesFormat = [[format(i, ".2f") for i in fiveSeries[j]] for j in range(len(fiveSeries))]
     fivexaxis = list(range(0, 5*len(fiveSeries[0]), 5)) # x축을 5분, 10분, 15분 이렇게 5분 간격으로 만들어준다.
     figure(figsize=(10.5, 6.5))  # 그래프 크기
