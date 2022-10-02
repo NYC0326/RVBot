@@ -5,22 +5,23 @@ from matplotlib import pyplot as plt
 from matplotlib import rc
 from matplotlib.pyplot import figure
 from PIL import Image
-import requests
-import time
+import requests, time, threading, os, json, urllib.request
 import matplotlib as mpl
-import urllib.request
-import threading
-import os
-import json
 
+# 그래프 띄울 필요가 없고 그냥 저장만 하면 되서 사용
 mpl.use('Agg')
-plt.rcParams.update({'figure.max_open_warning': 0})
+
+# plt.rcParams.update({'figure.max_open_warning': 0}) 
+# max open warning 경고 안뜨게 할려고 적어둔 거였는데
+# 그냥 plt.close() 하면 안뜬다는 말이 있어서 테스트 해보게 주석처리함
 
 header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko'}
 
 fivepath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\five.png'
 dailypath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\daily.png'
-gallpath = 'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_vlive'
+# gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvetreveluv'
+gallpath = r'https://gall.dcinside.com/mgallery/board/lists/?id=redvelvet_reality'
+transparency = False
 
 #멜론에 관한 데이터를 얻는 클래스
 class MelonData:
@@ -59,10 +60,12 @@ class MelonData:
         if param == 1:
             return self.data, self.name
 
-    def getDailyData(self):
+    def getDailyData(self, param):
         MelonChartURL = 'https://m2.melon.com/chart/hourly/hourlyChartGraph.json?appVer=5.0.4&cpId=IS40&cpKey=17LNM9&resolution=2&v=4.0'
         MelonChartPage = urllib.request.urlopen(MelonChartURL)
         MelonChartData = json.loads(MelonChartPage.read())
+        if param == 'time':
+            return MelonChartData['response']['XCATE']
         self.data = []
         self.SID = []
         self.name = []
@@ -115,7 +118,8 @@ timeOrigBugs = bugsData().time() # 벅스차트의 시간 (ex) 18:00 차트)
 # 크롬 환경 변수
 options = webdriver.ChromeOptions()
 # 크롬 투명하게 실행
-options.add_argument('headless')
+if transparency is True:
+    options.add_argument('headless')
 # 크롬 창 1300*800으로 실행 (하는 이유는 화면 창 사이즈에 따라서 웹 구조가 조금 달라질 수도 있어서)
 options.add_argument('--window-size=1300,800')
 # 크롬 드라이버 로드
@@ -155,6 +159,7 @@ def checkUpdate():
     except:
         print('멜론 5분 실수치 불러오기 실패')
     #실시간 차트 업데이트
+    xcate = MelonData().getDailyData('time')
     try:
         if timeOrigMelon != timeNowMelon:
             timeOrigMelon = timeNowMelon
@@ -180,6 +185,7 @@ def checkUpdate():
         pass
 
     # 만약 실시간 차트 (1시간 기준)가 업데이트 되었다면, 실시간 차트를 그려주는 함수를 실행한다.
+    '''
     try:
         if floTimeOrig != flochartTime and timeNowMelon != timeOrigMelon2 and timeBugs != timeOrigBugs:
             floTimeOrig = flochartTime
@@ -189,6 +195,7 @@ def checkUpdate():
             RV_rank()
     except:
         pass
+    '''
     threading.Timer(5, checkUpdate).start()
 
 # 팬들이 모여있는 디씨인사이드 사이트의 갤러리에 현재 음원 순위, 차트 그래프 사진을 업로드 하는 함수이다.
@@ -196,7 +203,7 @@ def DCupload(content, title, address=None):
     # 제목 입력
     driver.find_element_by_id('subject').send_keys(title)
     # 말머리 선택 / 현재 선택된 갤러리는 말머리가 없음
-    #driver.find_element_by_xpath("//li[@data-no='0']").click()
+    driver.find_element_by_xpath("//li[@data-no='0']").click()
     # HTML으로 쓰기 방식 변경
     driver.find_element_by_xpath('//*[@id="chk_html"]').click()
     # time.sleep(1)
@@ -223,12 +230,13 @@ def DCupload(content, title, address=None):
     # 저장 딜레이
     time.sleep(1)
     # 다시 갤사이트로 가기
-    driver.get('https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_vlive')
+    driver.get(gallpath)
     time.sleep(1)
 
 # 멜론 5분 실수치를 이용하여 그래프를 만들어 주는 함수이다.
 def melon_five():
     fiveSeries, fiveName = MelonData().getFiveData(1) # 5분 실수치와 5분 차트 노래 제목들을 퍼온다.
+    fiveSeriesFormat = [[format(i, ".2f") for i in fiveSeries[j]] for j in range(len(fiveSeries))]
     fivexaxis = list(range(0, 5*len(fiveSeries[0]), 5)) # x축을 5분, 10분, 15분 이렇게 5분 간격으로 만들어준다.
     figure(figsize=(10.5, 6.5))  # 그래프 크기
     g_max = max(fiveSeries[0])  # 5분 실수치 최대값
@@ -239,8 +247,8 @@ def melon_five():
     plt.rcParams['axes.facecolor'] = 'dimgray' # 그래프 배경 색
     plt.rcParams['savefig.facecolor'] = 'lightskyblue' # 그래프 바깥쪽 색
     linecolor = ['dodgerblue', 'darkorange', 'limegreen', 'orchid', 'goldenrod', 'tomato', 'mediumturquoise']  # 선색깔
-    for i in range(len(fiveSeries)):
-        if (len(fiveSeries[i]) != 0) and (len(fiveSeries[i]) == len(fiveSeries[0])):  # 선 그리기
+    for i in range(len(fiveSeriesFormat)):
+        if (len(fiveSeriesFormat[i]) != 0) and (len(fiveSeriesFormat[i]) == len(fiveSeriesFormat[0])):  # 선 그리기
             plt.plot(fivexaxis, fiveSeries[i], c=linecolor[i], lw='3.5', label=fiveName[i])
     plt.rcParams["legend.facecolor"] = 'whitesmoke'
     leg = plt.legend(fiveName, loc=1)  # 오른쪽 상단에 있는 주석에 들어가는 노래제목, 위치 지정
@@ -250,11 +258,11 @@ def melon_five():
     plt.xlim(0, 60)  # x축 값 제한
     plt.ylim(0, g_max + 1)  # y축 값은 최대 실수치보다 크게 지정
     textcolor = ['cyan', 'orange', 'lightgreen', 'violet', 'gold', 'coral', 'turquoise']  # 실수치 텍스트 색깔 지정
-    for i in range(len(fiveSeries)):
-        if (len(fiveSeries[i]) != 0 and len(fiveSeries[i]) == len(fiveSeries[0])):
+    for i in range(len(fiveSeriesFormat)):
+        if (len(fiveSeriesFormat[i]) != 0 and len(fiveSeriesFormat[i]) == len(fiveSeriesFormat[0])):
             mpl.rcParams['text.color'] = textcolor[i]
             texts = []
-            for x, y, s in zip(fivexaxis, fiveSeries[i], format(fiveSeries[i])):
+            for x, y, s in zip(fivexaxis, fiveSeries[i], fiveSeriesFormat[i]):
                 texts.append(plt.text(x, y, s, fontsize=15))
     # 오늘 날짜 가져오기
     mday = numToString(time.localtime().tm_mday)
@@ -284,31 +292,27 @@ def melon_five():
         content = content + "<br><br>"
         if i+1 != len(fiveSeries):
             content = content + "[%.3f]<br><br>" % (fiveSeries[i][n-1] - fiveSeries[i+1][n-1])
+    check = 0
     for i in range(len(fiveSeries)):
         # 이 코드는 특정 가수의 곡이 1, 2, 3등 안에 있을 때 글을 올리게끔 하는 코드이다. 여기선 레드벨벳을 예시로 적어놨다.
         if True: #레드벨벳의 최근 곡이 1, 2, 3위에 있는지 확인하는 조건문
-            print('레드벨벳 노래가 있으므로 글 올림')
-            DCupload(content, title, fivepath) # 글을 올려주는 함수 호출
+            print('[%s:%s] 레드벨벳 노래가 있으므로 글 올림' % (hour, minute))
+            #DCupload(content, title, fivepath) # 글을 올려주는 함수 호출
+            print(content)
             break
         else:
-            print('레드벨벳 노래가 없으므로 글을 올리지 않음')
+            check+=1
+            if check == 2:
+                print('[%s:%s] 레드벨벳 노래가 없으므로 글을 올리지 않음' % (hour, minute))
 
 # 위에 멜론 5분 차트 그래프 그려주는 함수와 같이 이건 실시간 차트를 그래프로 그려주는 함수이다.
 # 위 함수와 코드가 동일하므로 세세한 주석은 생략했습니다.
 def melon_daily():
-    top3Data, top3SID, top3Name = MelonData().getDailyData()
+    top3Data, top3SID, top3Name = MelonData().getDailyData('')
+    xcate = MelonData().getDailyData('time')
     top3DataFormat = [[format(i, ".2f") for i in top3Data[j]] for j in range(len(top3Data))]
-    top3xaxis = ["00", "01", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21","22", "23"]
-    top3xaxisNum = [int(i)+0]
-    now_hour = time.strftime('%H', time.localtime(time.time()))
-    for i in range(19):
-        if int(now_hour) == int(top3xaxis[i]):
-            list1 = top3xaxis[i+1:19]
-            list2 = top3xaxis[0:i+1]
-            top3xaxis[0:18-i] = list1
-            top3xaxis[18-i:i] = list2
-            del top3xaxis[19:]
-    fig = plt.figure()
+    top3xaxis = xcate.split(',')
+    #fig = plt.figure()
     figure(figsize=(10.5, 6.5))  # 그래프 크기
     if os.path.exists('daily.png'):
         os.remove('daily.png')
@@ -337,7 +341,10 @@ def melon_daily():
             mpl.rcParams['text.color'] = textcolor[i]
             texts = []
             for x, y, s in zip(top3xaxis, top3Data[i], top3DataFormat[i]):
-                texts.append(plt.text(x, y, s, fontsize=15))
+                if s == '0.00':
+                    pass
+                else:
+                    plt.text(x, y, s, fontsize=15)
             texts2 = []
             mpl.rcParams['text.color'] = darktextcolor[i]
             texts2.append(plt.text(18, top3Data[i][18], format(top3Data[i][18], ".2f"), fontsize=15))
@@ -353,7 +360,7 @@ def melon_daily():
     dailygraph.paste(reveluv, (2494, 1351), reveluv)  # 갤러리 낙관 박을 위치 지정
     # fivegraph.paste(summermagic, (2094,1461), summermagic)    #개인 낙관 박을 위치 지정
     dailygraph.save('daily.png')  # 그래프 저장하기
-    #dailygraph.show()  # 그래프 보여주기
+    dailygraph.show()  # 그래프 보여주기
     title = '[%s:00] 멜론 실시간 차트' % hour
     content=str()
     for i in range(len(top3Name)):
@@ -364,13 +371,16 @@ def melon_daily():
         content = content + "<br><br>"
         if i+1 != len(top3Data):
             content = content + "[%.3f]<br><br>" % (top3Data[i][n-1] - top3Data[i+1][n-1])
+    check = 0
     for i in range(len(top3Name)):
         if True:
-            print('레드벨벳 노래가 있으므로 글 올림')
-            DCupload(content, title, dailypath)
+            print('[%s:00] 레드벨벳 노래가 있으므로 글 올림' % (hour))
+            #DCupload(content, title, dailypath)
             break
         else:
-            print('레드벨벳 노래가 없으므로 글을 올리지 않음')
+            check += 1
+            if check==2:
+                print('[%s:%s] 레드벨벳 노래가 없으므로 글을 올리지 않음' % (hour, minute))
 
 # 이 함수는 흔히 사용하는 4대 음원 사이트 (멜론, 지니, 벅스, 플로)에서 특정 가수의 곡들이 몇위를 하고 있고, 증감 폭을
 # 구해주는 함수로, 이 또한 텍스트로 변환하여 글을 올리는 함수를 호출하여 글을 올릴 수 있다.
@@ -425,7 +435,7 @@ def RV_rank():
     artist_m = soup.find_all("div", {"class": "ellipsis rank02"})
     for i in range(len(title_m)):
         title_m[i], artist_m[i] = title_m[i].text, artist_m[i].text
-    string_m2 = '' + '-' * 27 + '<font color="#00CC33"><멜론 24H 순위></font>' + '-' * 27 + '<br>'
+    string_m2 = '' + '-' * 27 + '<font color="#00CC33"><멜론 TOP 100 순위></font>' + '-' * 27 + '<br>'
     for j in range(100):
         for i in range(len(RV)):
             if RV[i] in artist_m[j]:
@@ -565,8 +575,8 @@ def RV_rank():
     if hour < 10:
         hour = str('0' + str(time.localtime().tm_hour))
     title = '[%s:00] 레드벨벳 음원 순위' % hour
-    DCupload(title=title, content=content)
-    #print(content)
+    #DCupload(title=title, content=content)
+    print(content)
 
 # 처음 시작 하기 위해선 업데이트를 확인하는 함수를 불러온다.
-checkUpdate()
+melon_daily()
