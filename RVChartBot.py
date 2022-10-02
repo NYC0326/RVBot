@@ -17,11 +17,17 @@ mpl.use('Agg')
 
 header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko'}
 
+<<<<<<< HEAD
 fivepath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\five.png'
 dailypath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\daily.png'
 # gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvetreveluv'
 gallpath = r'https://gall.dcinside.com/mgallery/board/lists/?id=redvelvet_reality'
 transparency = False
+=======
+fivepath = r'C:\Users\***\PycharmProjects\RVChartBot\five.png'
+dailypath = r'C:\Users\***\PycharmProjects\RVChartBot\daily.png'
+gallpath = 'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_vlive'
+>>>>>>> 1736e2fd3d7b2b982d2c3347aff4df95a9435670
 
 #멜론에 관한 데이터를 얻는 클래스
 class MelonData:
@@ -126,8 +132,8 @@ options.add_argument('--window-size=1300,800')
 driver = webdriver.Chrome('chromedriver_win32/chromedriver.exe', options=options)
 driver.implicitly_wait(1)
 driver.get('https://www.dcinside.com/') # 디시인사이드 로그인 페이지 로드
-driver.find_element_by_name('user_id').send_keys('rvchartbot') # 아이디
-driver.find_element_by_name('pw').send_keys('dkfmaekdnsrkdtks123') # 패스워드
+driver.find_element_by_name('user_id').send_keys('*****') # 아이디
+driver.find_element_by_name('pw').send_keys('*****') # 패스워드
 driver.find_element_by_id('login_ok').click() # 로그인
 driver.get(gallpath) # 글을 쓰고자 하는 갤러리로 이동
 
