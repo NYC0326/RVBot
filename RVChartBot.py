@@ -1,4 +1,5 @@
 #-*- coding:utf-8 -*
+from tabnanny import check
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -58,52 +59,63 @@ class MelonData:
 
     # 멜론 5분 실수치 크롤링 // 0이면 수치만, 1이면 이름까지
     def getFiveData(self, param):
-        MelonChartURL = 'https://m.app.melon.com/chart/hourly/fiveChartGraph.json?cpId=AS40&cpKey=14LNC3&v=4.0'
-        MelonChartPage = urllib.request.urlopen(MelonChartURL)
-        MelonChartData = json.loads(MelonChartPage.read())
-        self.data = []
-        self.name = []
-        for i in range(len(MelonChartData['response']['GRAPHDATALIST'])):
-            fiveS = []
-            self.name.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHCHARTINFO']['SONGNAME'])
-            for j in range(len(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'])):
-                fiveS.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'][j]['VAL'])
-            del fiveS[0]
-            for j in range(len(fiveS)):
-                fiveS[j] = float(fiveS[j])
-            self.data.append(fiveS)
-        if param == 0:
-            return len(self.data[0])
-        if param == 1:
-            return self.data
-        if param == 2:
-            return self.data, self.name
+        try:
+            MelonChartURL = 'https://m.app.melon.com/chart/hourly/fiveChartGraph.json?cpId=AS40&cpKey=14LNC3&v=4.0'
+            MelonChartPage = urllib.request.urlopen(MelonChartURL)
+            MelonChartData = json.loads(MelonChartPage.read())
+            self.data = []
+            self.name = []
+            for i in range(len(MelonChartData['response']['GRAPHDATALIST'])):
+                fiveS = []
+                self.name.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHCHARTINFO']['SONGNAME'])
+                for j in range(len(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'])):
+                    fiveS.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'][j]['VAL'])
+                del fiveS[0]
+                for j in range(len(fiveS)):
+                    fiveS[j] = float(fiveS[j])
+                self.data.append(fiveS)
+            if param == 0:
+                return len(self.data[0])
+            if param == 1:
+                return self.data
+            if param == 2:
+                return self.data, self.name
+        except:
+            if param == 0:
+                return 100
+            if param == 1:
+                return 100
+            if param == 2:
+                return 100, 100
 
     def getDailyData(self, param):
-        MelonChartURL = 'https://m2.melon.com/chart/hourly/hourlyChartGraph.json?appVer=5.0.4&cpId=IS40&cpKey=17LNM9&resolution=2&v=4.0'
-        MelonChartPage = urllib.request.urlopen(MelonChartURL)
-        MelonChartData = json.loads(MelonChartPage.read())
-        if param == 'time':
-            return MelonChartData['response']['XCATE']
-        self.data = []
-        self.SID = []
-        self.name = []
-        for i in range(len(MelonChartData['response']['GRAPHDATALIST'])):
-            self.SID.append(MelonChartData['response']['GRAPHDATALIST'][i]['SONGID'])
-            top3D = []
-            for j in range(len(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'])):
-                top3D.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'][j]['VAL'])
-            for k in range(len(top3D)):
-                if top3D[k] == "":
-                    top3D[k] = 0.00
-                top3D[k] = float(top3D[k])
-            self.data.append(top3D)
-        for i in range(len(self.SID)):
-            req = requests.get('https://www.melon.com/song/detail.htm?songId=' + self.SID[i], headers=header)
-            html = req.text
-            soup = BeautifulSoup(html, "html.parser")
-            self.name.append(soup.find("div", {"class": "song_name"}).text.replace('곡명', '').strip())
-        return self.data, self.SID, self.name
+        try:
+            MelonChartURL = 'https://m2.melon.com/chart/hourly/hourlyChartGraph.json?appVer=5.0.4&cpId=IS40&cpKey=17LNM9&resolution=2&v=4.0'
+            MelonChartPage = urllib.request.urlopen(MelonChartURL)
+            MelonChartData = json.loads(MelonChartPage.read())
+            if param == 'time':
+                return MelonChartData['response']['XCATE']
+            self.data = []
+            self.SID = []
+            self.name = []
+            for i in range(len(MelonChartData['response']['GRAPHDATALIST'])):
+                self.SID.append(MelonChartData['response']['GRAPHDATALIST'][i]['SONGID'])
+                top3D = []
+                for j in range(len(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'])):
+                    top3D.append(MelonChartData['response']['GRAPHDATALIST'][i]['GRAPHDATA'][j]['VAL'])
+                for k in range(len(top3D)):
+                    if top3D[k] == "":
+                        top3D[k] = 0.00
+                    top3D[k] = float(top3D[k])
+                self.data.append(top3D)
+            for i in range(len(self.SID)):
+                req = requests.get('https://www.melon.com/song/detail.htm?songId=' + self.SID[i], headers=header)
+                html = req.text
+                soup = BeautifulSoup(html, "html.parser")
+                self.name.append(soup.find("div", {"class": "song_name"}).text.replace('곡명', '').strip())
+            return self.data, self.SID, self.name
+        except:
+            return 100, 100, 100
 
 #플로에 관한 데이터를 얻는 클래스
 class floData:
@@ -133,12 +145,10 @@ timeOrigMelon2 = MelonData().time()    #시간이 바뀌었는지 비교하기 �
 멜론에는 5분마다 그 곡의 점유율(전체 들은 곡중 그 곡을 들은 비율)을 업데이트 해주는데 만약 새로운 값이 나왔다면
 데이터의 길이가 달라졌을 것 이므로, 처음 길이를 저장해 놓은 전역 변수
 '''
-try:
-    fiveOrigLength = MelonData().getFiveData(0)
-    floTimeOrig = floData().time()   # 플로차트의 시간 (ex) 18:00 차트)
-    timeOrigBugs = bugsData().time() # 벅스차트의 시간 (ex) 18:00 차트)
-except:
-    pass
+fiveOrigLength = MelonData().getFiveData(0)
+floTimeOrig = floData().time()   # 플로차트의 시간 (ex) 18:00 차트)
+timeOrigBugs = bugsData().time() # 벅스차트의 시간 (ex) 18:00 차트)
+
 # 크롬 환경 변수
 options = webdriver.ChromeOptions()
 options.add_experimental_option("excludeSwitches", ["enable-logging"])
@@ -178,38 +188,38 @@ def checkUpdate():
         flochartTime = floData().time()
     except:
         print('음원 차트 시간 불러오기 실패')
-
-    # 멜론 5분 실수치 퍼오기
-    try:
-        fiveSeries = MelonData().getFiveData(1)
-    except:
-        print('멜론 5분 실수치 불러오기 실패')
-
-    #실시간 차트 업데이트
-    try:
-        if timeOrigMelon != timeNowMelon:
-            timeOrigMelon = timeNowMelon
-            print('멜론 실시간 차트 업데이트')
-            #melon_daily()
-    except:
-        pass
-
-    # 정각이 지난 한 10~30초 정도 아무 데이터가 없을 때가 있다. 그때를 위한 코드이다.
-    if fiveOrigLength == 0:
+    if fiveOrigLength != 100:    
+        # 멜론 5분 실수치 퍼오기
         try:
             fiveSeries = MelonData().getFiveData(1)
         except:
+            print('멜론 5분 실수치 불러오기 실패')
+    
+        #실시간 차트 업데이트
+        try:
+            if timeOrigMelon != timeNowMelon:
+                timeOrigMelon = timeNowMelon
+                print('멜론 실시간 차트 업데이트')
+                melon_daily()
+        except:
             pass
-
-    # 만약 5분 차트가 업데이트 되었다면, 5분 차트 그래프를 그려주는 함수를 실행한다.
-    try:
-        if fiveOrigLength != len(fiveSeries[0]):
-            if len(fiveSeries[0]) != 1:
-                fiveOrigLength = len(fiveSeries[0])
-                print('5분 차트 업데이트')
-                melon_five()
-    except:
-        pass
+        
+        # 정각이 지난 한 10~30초 정도 아무 데이터가 없을 때가 있다. 그때를 위한 코드이다.
+        if fiveOrigLength == 0:
+            try:
+                fiveSeries = MelonData().getFiveData(1)
+            except:
+                pass
+            
+        # 만약 5분 차트가 업데이트 되었다면, 5분 차트 그래프를 그려주는 함수를 실행한다.
+        try:
+            if fiveOrigLength != len(fiveSeries[0]):
+                if len(fiveSeries[0]) != 1:
+                    fiveOrigLength = len(fiveSeries[0])
+                    print('5분 차트 업데이트')
+                    melon_five()
+        except:
+            pass
 
     # 만약 실시간 차트 (1시간 기준)가 업데이트 되었다면, 실시간 차트를 그려주는 함수를 실행한다.
     try:
@@ -603,4 +613,4 @@ def RV_rank():
     DCupload(title=title, content=content)
 
 # 처음 시작 하기 위해선 업데이트를 확인하는 함수를 불러온다.
-RV_rank()
+checkUpdate()
