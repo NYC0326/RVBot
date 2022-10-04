@@ -2,6 +2,8 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from matplotlib import pyplot as plt
 from matplotlib import rc
 from matplotlib.pyplot import figure
@@ -20,8 +22,9 @@ header = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like
 
 fivepath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\five.png'
 dailypath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\daily.png'
-# gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvetreveluv'
-gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_reality'
+gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvetreveluv'
+# gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_reality'
+rvNames = ['레드벨벳', 'IRENE', 'SEULGI', 'WENDY', 'JOY', 'YERI']
 transparency = False
 
 #멜론에 관한 데이터를 얻는 클래스
@@ -130,18 +133,22 @@ timeOrigMelon2 = MelonData().time()    #시간이 바뀌었는지 비교하기 �
 멜론에는 5분마다 그 곡의 점유율(전체 들은 곡중 그 곡을 들은 비율)을 업데이트 해주는데 만약 새로운 값이 나왔다면
 데이터의 길이가 달라졌을 것 이므로, 처음 길이를 저장해 놓은 전역 변수
 '''
-fiveOrigLength = MelonData().getFiveData(0)
-floTimeOrig = floData().time()   # 플로차트의 시간 (ex) 18:00 차트)
-timeOrigBugs = bugsData().time() # 벅스차트의 시간 (ex) 18:00 차트)
+try:
+    fiveOrigLength = MelonData().getFiveData(0)
+    floTimeOrig = floData().time()   # 플로차트의 시간 (ex) 18:00 차트)
+    timeOrigBugs = bugsData().time() # 벅스차트의 시간 (ex) 18:00 차트)
+except:
+    pass
 # 크롬 환경 변수
 options = webdriver.ChromeOptions()
+options.add_experimental_option("excludeSwitches", ["enable-logging"])
 # 크롬 투명하게 실행
 if transparency is True:
     options.add_argument('headless')
 # 크롬 창 1920*1080으로 실행 (하는 이유는 화면 창 사이즈에 따라서 웹 구조가 조금 달라질 수도 있어서)
 options.add_argument('--window-size=1920,1080')
 # 크롬 드라이버 로드
-driver = webdriver.Chrome('chromedriver_win32/chromedriver.exe', options=options)
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 driver.implicitly_wait(5)
 driver.get('https://www.dcinside.com/') # 디시인사이드 로그인 페이지 로드
 driver.find_element(By.NAME, 'user_id').send_keys('rvchartbot') # 아이디
@@ -221,7 +228,7 @@ def DCupload(content, title, address=None):
     # 제목 입력
     driver.find_element(By.ID, 'subject').send_keys(title)
     # 말머리 선택 / 현재 선택된 갤러리는 말머리가 없음
-    # driver.find_element_by_xpath("//li[@data-no='0']").click()
+    driver.find_element(By.XPATH, "//li[@data-no='0']").click()
     # HTML으로 쓰기 방식 변경
     driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
     # time.sleep(1)
@@ -314,7 +321,7 @@ def melon_five():
     check = 0
     for i in range(len(fiveSeries)):
         # 이 코드는 특정 가수의 곡이 1, 2, 3등 안에 있을 때 글을 올리게끔 하는 코드이다. 여기선 레드벨벳을 예시로 적어놨다.
-        if True: #레드벨벳의 최근 곡이 1, 2, 3위에 있는지 확인하는 조건문
+        if fiveName[i] in rvNames: #레드벨벳의 최근 곡이 1, 2, 3위에 있는지 확인하는 조건문
             print('[%s:%s] 레드벨벳 노래가 있으므로 글 올림' % (hour, minute))
             #DCupload(content, title, fivepath) # 글을 올려주는 함수 호출
             print(content)
@@ -392,7 +399,7 @@ def melon_daily():
             content = content + "[%.3f]<br><br>" % (top3Data[i][n-1] - top3Data[i+1][n-1])
     check = 0
     for i in range(len(top3Name)):
-        if True:
+        if top3Name[i] in rvNames:
             print('[%s:00] 레드벨벳 노래가 있으므로 글 올림' % (hour))
             #DCupload(content, title, dailypath)
             break
@@ -414,8 +421,7 @@ def RV_rank():
     RankGap = []
     RankType = []
     ArtistName = []
-    RV = ['레드벨벳', 'IRENE', 'SEULGI', 'WENDY', 'JOY', 'YERI']
-    string_m = '<br>' + '-' * 27 + '<font color="#00CC33"><멜론 실시간 순위></font>' + '-' * 27 + '<br>'
+    string_m = '<br>' + '-' * 21 + '<font color="#00CC33"><멜론 실시간 순위></font>' + '-' * 21 + '<br>'
     for i in range(len(MelonChartData['response']['CHARTLIST'])):
         SongName.append(MelonChartData['response']['CHARTLIST'][i]['SONGNAME'])
         CurRank.append(MelonChartData['response']['CHARTLIST'][i]['CURRANK'])
@@ -436,11 +442,11 @@ def RV_rank():
             RankType[i] = '<font color="green">' + 'NEW' + '</font>'
 
     for i in range(100):
-        for j in range(len(RV)):
+        for j in range(len(rvNames)):
             for k in range(len(ArtistName[i])):
-                if RV[j] in ArtistName[i][k]:
+                if rvNames[j] in ArtistName[i][k]:
                     string_m = string_m + '{:<5}'.format(str(i + 1) + '위') + '</font>' + RankType[i] + '<font color="purple"> ' + '{:<30}'.format(SongName[i].lstrip()) + '</font><br>'
-            if RV[j] in SongName[i]:
+            if rvNames[j] in SongName[i]:
                 string_m = string_m + '{:<5}'.format(str(i + 1) + '위') + '</font>' + RankType[i] + '<font color="purple"> ' + '{:<30}'.format(SongName[i].lstrip()) + '</font><br>'
     ##                  레드벨벳 멜론 실시간 차트 등수 크롤링
 
@@ -454,18 +460,18 @@ def RV_rank():
     artist_m = soup.find_all("div", {"class": "ellipsis rank02"})
     for i in range(len(title_m)):
         title_m[i], artist_m[i] = title_m[i].text, artist_m[i].text
-    string_m2 = '' + '-' * 27 + '<font color="#00CC33"><멜론 TOP 100 순위></font>' + '-' * 27 + '<br>'
+    string_m2 = '' + '-' * 20 + '<font color="#00CC33"><멜론 TOP 100 순위></font>' + '-' * 20 + '<br>'
     for j in range(100):
-        for i in range(len(RV)):
-            if RV[i] in artist_m[j]:
+        for i in range(len(rvNames)):
+            if rvNames[i] in artist_m[j]:
                 string_m2 = string_m2 + '{:<5}'.format(str(j + 1) + '위') + '</font>' + '<font color="purple"> ' + '{:<30}'.format(title_m[j].strip()) + '</font><br>'
-            if RV[i] in title_m[j]:
+            if rvNames[i] in title_m[j]:
                 string_m2 = string_m2 + '{:<5}'.format(str(j + 1) + '위') + '</font>' + '<font color="purple"> ' + '{:<30}'.format(title_m[j].strip()) + '</font><br>'
     ##                  레드벨벳 지니 차트 등수 크롤링
     title_g = []
     artist_g = []
     fluct_g = []
-    string_g = '        <br>'+'-'* 27 + '<font color="#21B5E6"><지니 순위></font>'+'-'*27+'<br>'
+    string_g = '        <br>'+'-'* 25 + '<font color="#21B5E6"><지니 순위></font>'+'-'*25+'<br>'
 
     for i in range(1, 6):
         req_g = requests.get('https://www.genie.co.kr/chart/top200?pg=' + str(i), headers=header)
@@ -504,10 +510,10 @@ def RV_rank():
             fluct_g[i] = '<font color="green">' + 'NEW' + '</font>'
 
     for j in range(250):
-        for i in range(len(RV)):
-            if RV[i] in artist_g[j]:
+        for i in range(len(rvNames)):
+            if rvNames[i] in artist_g[j]:
                 string_g = string_g + '{:<5}'.format(str(j + 1) + '위') + '</font>' + '{:<5}'.format(fluct_g[j]) + '<font color="purple"> ' + '{:<30}'.format(title_g[j].lstrip()) + '</font><br>'
-            if RV[i] in title_g[j]:
+            if rvNames[i] in title_g[j]:
                 string_g = string_g + '{:<5}'.format(str(j + 1) + '위') + '</font>' + '{:<5}'.format(fluct_g[j]) + '<font color="purple"> ' + '{:<30}'.format(title_g[j].lstrip()) + '</font><br>'
     ##                  레드벨벳 지니 차트 등수 크롤링
 
@@ -523,7 +529,7 @@ def RV_rank():
     title_b = []
     fluct_b = []
     fluct_b2 = []
-    string_b = '        <br>'+'-'*27+'<font color="#F94232"><벅스 순위></font>'+'-'*27+'<br>'
+    string_b = '        <br>'+'-'*25+'<font color="#F94232"><벅스 순위></font>'+'-'*25+'<br>'
 
     for t in titles_b:
         title_b.append(t.find('a').text)
@@ -542,10 +548,10 @@ def RV_rank():
                 fluct_b[i] = '<font color="blue">' + fluct_b[i] + '↓ </font>'
 
     for j in range(100):
-        for i in range(len(RV)):
-            if RV[i] in str(artists_b[j]):
+        for i in range(len(rvNames)):
+            if rvNames[i] in str(artists_b[j]):
                 string_b = string_b + '{:<5}'.format(str(j + 1) + '위') + '</font>' + fluct_b[j] + ' <font color="purple"> ' + '{:<30}'.format(title_b[j]) + '</font><br>'
-            if RV[i] in str(titles_b[j]):
+            if rvNames[i] in str(titles_b[j]):
                 string_b = string_b + '{:<5}'.format(str(j + 1) + '위') + '</font>' + fluct_b[j] + ' <font color="purple"> ' + '{:<30}'.format(title_b[j]) + '</font><br>'
     ##                  레드벨벳 벅스 차트 등수 크롤링
 
@@ -553,7 +559,7 @@ def RV_rank():
     flochartURL = "https://api.music-flo.com/display/v1/browser/chart/1"
     flochartPage = urllib.request.urlopen(flochartURL)
     flochartData = json.loads(flochartPage.read())
-    string_f = '        <br>' + '-' * 27 + '<font color="#3f3fff"><플로 순위></font>' + '-' * 27 + '<br>'
+    string_f = '        <br>' + '-' * 25 + '<font color="#3f3fff"><플로 순위></font>' + '-' * 25 + '<br>'
     title_f = list()
     artist_f = list()
     fluct_f = list()
@@ -574,18 +580,18 @@ def RV_rank():
             fluct_f[i] = '<font color="blue">' + str(abs(int(fluct_f[i]))) + '↓ </font>'
 
     for i in range(100):
-        for j in range(len(RV)):
+        for j in range(len(rvNames)):
             if len(artist_f[i]) == 1:
-                if RV[j] in artist_f[i][0]:
+                if rvNames[j] in artist_f[i][0]:
                     string_f = string_f + '{:<5}'.format(str(i + 1) + '위') + '</font>' + fluct_f[i] + '<font color="purple"> ' + '{:<30}'.format(title_f[i].lstrip()) + '</font><br>'
-                if RV[j] in title_f[i]:
+                if rvNames[j] in title_f[i]:
                     string_f = string_f + '{:<5}'.format(str(i + 1) + '위') + '</font>' + fluct_f[i] + '<font color="purple"> ' + '{:<30}'.format(title_f[i].lstrip()) + '</font><br>'
 
             else:
                 for k in range(len(artist_f[i])):
-                    if RV[j] in artist_f[i][k]:
+                    if rvNames[j] in artist_f[i][k]:
                         string_f = string_f + '{:<5}'.format(str(i + 1) + '위') + '</font>' + fluct_f[i] + '<font color="purple"> ' + '{:<30}'.format(title_f[i].lstrip()) + '</font><br>'
-                    if RV[j] in title_f[i]:
+                    if rvNames[j] in title_f[i]:
                         string_f = string_f + '{:<5}'.format(str(i + 1) + '위') + '</font>' + fluct_f[i] + '<font color="purple"> ' + '{:<30}'.format(title_f[i].lstrip()) + '</font><br>'
 
     ##                  레드벨벳 플로 차트 등수 크롤링
@@ -594,8 +600,7 @@ def RV_rank():
     if hour < 10:
         hour = str('0' + str(time.localtime().tm_hour))
     title = '[%s:00] 레드벨벳 음원 순위' % hour
-    #DCupload(title=title, content=content)
-    print(content)
+    DCupload(title=title, content=content)
 
 # 처음 시작 하기 위해선 업데이트를 확인하는 함수를 불러온다.
-melon_daily()
+RV_rank()
