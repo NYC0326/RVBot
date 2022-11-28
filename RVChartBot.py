@@ -242,9 +242,10 @@ def DCupload(content, title, address=None):
     driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
     # time.sleep(1)
     # HTML로 쓰기 방식 변경하면 알아서 글쓰는 공간으로 옮겨짐
-    # driver.switch_to.frame(driver.find_element_by_xpath("//iframe[@name='tx_canvas_wysiwyg']"))
+    driver.switch_to.frame(driver.find_element(By.XPATH, "//iframe[@name='tx_canvas_wysiwyg']"))
     # 본문 입력
     driver.find_element(By.TAG_NAME, "body").send_keys(content)
+    driver.switch_to.default_content()
     driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
     # 이미지 업로드 창 선택
     if address != None:
@@ -260,7 +261,7 @@ def DCupload(content, title, address=None):
         driver.switch_to.window(driver.window_handles[0])
     # 글쓰기 저장
     driver.switch_to.default_content()
-    driver.find_element(By.XPATH, '//*[@id="chk_html"]').click()
+    time.sleep(1000)
     driver.find_element(By.XPATH, "//button[@class='btn_blue btn_svc write']").click()
     # 저장 딜레이
     driver.implicitly_wait(1)
@@ -395,7 +396,7 @@ def melon_daily():
     dailygraph.paste(reveluv, (2494, 1351), reveluv)  # 갤러리 낙관 박을 위치 지정
     # fivegraph.paste(summermagic, (2094,1461), summermagic)    #개인 낙관 박을 위치 지정
     dailygraph.save('daily.png')  # 그래프 저장하기
-    dailygraph.show()  # 그래프 보여주기
+    # dailygraph.show()  # 그래프 보여주기
     title = '[%s:00] 멜론 실시간 차트' % hour
     content=str()
     for i in range(len(top3Name)):
