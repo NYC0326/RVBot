@@ -25,7 +25,7 @@ dailypath = r'C:\Users\남유찬\PycharmProjects\RVChartBot\daily.png'
 gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvetreveluv'
 # gallpath = r'https://gall.dcinside.com/mgallery/board/write/?id=redvelvet_reality'
 rvNames = ['레드벨벳', 'IRENE', 'SEULGI', 'WENDY', 'JOY', 'YERI']
-transparency = False
+transparency = True
 
 #멜론에 관한 데이터를 얻는 클래스
 class MelonData:
